@@ -20,7 +20,7 @@ struct PaymentSettingsView: View {
                 TextField("카드 번호", text: $cardNumber)
                     .keyboardType(.numberPad) // 숫자 키패드 표시
                     // cardNumber 값이 변경될 때마다 아래 코드를 실행
-                    .onChange(of: cardNumber) { newValue in
+                    .onChange(of: cardNumber) { _, newValue in
                         let formatted = formatCardNumber(newValue)
                         // 무한 루프를 방지하기 위해, 변경된 경우에만 값을 업데이트
                         if cardNumber != formatted {
@@ -34,7 +34,7 @@ struct PaymentSettingsView: View {
                 TextField("생년월일 (YYMMDD)", text: $birthDate)
                     .keyboardType(.numberPad)
                 
-                TextField("유효기간 (YY/MM)", text: $expiryDate)
+                TextField("유효기간 (YYMM)", text: $expiryDate)
                     .keyboardType(.numberPad)
             }
             
