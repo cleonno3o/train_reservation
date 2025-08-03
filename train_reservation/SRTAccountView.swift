@@ -28,13 +28,25 @@ struct SRTAccountView: View {
             Section {
                 // 버튼을 누르면 클로저 안의 코드가 실행됨
                 Button("저장") {
-                    // 지금은 입력된 값을 콘솔에 출력하는 동작만 수행
-                    print("SRT 계정 저장됨: ID - \(username), PW - \(password)")
+                    // KeychainHelper를 사용해 ID와 비밀번호를 안전하게 저장
+                    KeychainHelper.shared.save(key: "srt_username", value: username)
+                    KeychainHelper.shared.save(key: "srt_password", value: password)
+                    print("SRT 계정 정보가 키체인에 저장되었습니다.")
                 }
             }
         }
         .navigationTitle("SRT 계정 설정")
         .navigationBarTitleDisplayMode(.inline)
+        // View가 화면에 나타날 때 실행되는 코드
+        .onAppear {
+            // 키체인에서 저장된 ID와 비밀번호를 불러와서 화면에 표시
+            if let savedUsername = KeychainHelper.shared.load(key: "srt_username") {
+                self.username = savedUsername
+            }
+            if let savedPassword = KeychainHelper.shared.load(key: "srt_password") {
+                self.password = savedPassword
+            }
+        }
     }
 }
 
