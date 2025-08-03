@@ -59,7 +59,7 @@ struct SRTTrainSearchView: View {
             }
             
             Section(header: Text("날짜/시간")) {
-                DatePicker("날짜", selection: $selectedDate, displayedComponents: .date)
+                DatePicker("날짜", selection: $selectedDate, in: Date()...Calendar.current.date(byAdding: .month, value: 1, to: Date())!, displayedComponents: .date)
                 DatePicker("시간", selection: $selectedTime, displayedComponents: .hourAndMinute)
             }
             

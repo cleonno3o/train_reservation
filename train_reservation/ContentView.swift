@@ -10,8 +10,8 @@ import SwiftUI
 // 앱의 메인 화면. 각 기능 화면으로 연결하는 네비게이션 역할
 struct ContentView: View {
     var body: some View {
-        // 화면 간 이동을 관리하는 NavigationView
-        NavigationView {
+        // 화면 간 이동을 관리하는 NavigationStack
+        NavigationStack {
             // 요소들을 세로로 정렬하는 VStack
             VStack(spacing: 20) {
                 // SRTView로 이동하는 네비게이션 링크

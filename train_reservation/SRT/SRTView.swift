@@ -24,62 +24,61 @@ struct SRTView: View {
     @State private var navigateToTrainSearch = false
     
     var body: some View {
-        // 숨겨진 NavigationLink. navigateToTrainSearch가 true가 되면 활성화됨
-        NavigationLink(destination: SRTTrainSearchView(), isActive: $navigateToTrainSearch) {
-            EmptyView() // 화면에 아무것도 표시하지 않음
-        }
-        
-        // Form은 설정이나 데이터 입력에 적합한 UI를 제공
-        Form {
-            Section(header: Text("SRT 로그인 정보")) {
-                TextField("아이디 (회원번호, 이메일, 전화번호)", text: $id)
-                    .keyboardType(.emailAddress) // 이메일 키보드 타입
-                    .autocapitalization(.none) // 자동 대문자화 방지
+        VStack {
+            Form {
+                Section(header: Text("SRT 로그인 정보")) {
+                    TextField("아이디 (회원번호, 이메일, 전화번호)", text: $id)
+                        .keyboardType(.emailAddress) // 이메일 키보드 타입
+                        .autocapitalization(.none) // 자동 대문자화 방지
+                    
+                    SecureField("비밀번호", text: $password)
+                        .keyboardType(.default)
+                }
                 
-                SecureField("비밀번호", text: $password)
-                    .keyboardType(.default)
+                Section {
+                    Button("로그인") {
+                        // 로그인 버튼 클릭 시 비동기 작업 시작
+                        Task {
+                            await loginSRT()
+                        }
+                    }
+                    .disabled(isLoading) // 로그인 중에는 버튼 비활성화
+                }
             }
-            
-            Section {
-                Button("로그인") {
-                    // 로그인 버튼 클릭 시 비동기 작업 시작
-                    Task {
-                        await loginSRT()
+            .navigationTitle("SRT 로그인") // 네비게이션 바 제목
+            .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
+            // View가 화면에 나타날 때 실행되는 코드
+            .onAppear {
+                // 키체인에서 저장된 아이디와 비밀번호를 불러와서 화면에 표시
+                if let savedId = KeychainHelper.shared.load(key: "srt_id") {
+                    self.id = savedId
+                }
+                if let savedPassword = KeychainHelper.shared.load(key: "srt_password") {
+                    self.password = savedPassword
+                }
+            }
+            // 알림창 표시
+            .alert("로그인 결과", isPresented: $showingAlert) {
+                Button("확인") {
+                    // 로그인 성공 메시지일 경우에만 화면 전환
+                    if alertMessage == "로그인 성공!" {
+                        navigateToTrainSearch = true
                     }
                 }
-                .disabled(isLoading) // 로그인 중에는 버튼 비활성화
+            } message: {
+                Text(alertMessage)
             }
-        }
-        .navigationTitle("SRT 로그인") // 네비게이션 바 제목
-        .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
-        // View가 화면에 나타날 때 실행되는 코드
-        .onAppear {
-            // 키체인에서 저장된 아이디와 비밀번호를 불러와서 화면에 표시
-            if let savedId = KeychainHelper.shared.load(key: "srt_id") {
-                self.id = savedId
-            }
-            if let savedPassword = KeychainHelper.shared.load(key: "srt_password") {
-                self.password = savedPassword
-            }
-        }
-        // 알림창 표시
-        .alert("로그인 결과", isPresented: $showingAlert) {
-            Button("확인") {
-                // 로그인 성공 메시지일 경우에만 화면 전환
-                if alertMessage == "로그인 성공!" {
-                    navigateToTrainSearch = true
+            // 로그인 중일 때 로딩 인디케이터 표시
+            .overlay {
+                if isLoading {
+                    ProgressView("로그인 중...")
+                        .padding()
+                        .background(Color.white.opacity(0.8))
+                        .cornerRadius(10)
                 }
             }
-        } message: {
-            Text(alertMessage)
-        }
-        // 로그인 중일 때 로딩 인디케이터 표시
-        .overlay {
-            if isLoading {
-                ProgressView("로그인 중...")
-                    .padding()
-                    .background(Color.white.opacity(0.8))
-                    .cornerRadius(10)
+            .navigationDestination(isPresented: $navigateToTrainSearch) {
+                SRTTrainSearchView()
             }
         }
     }
