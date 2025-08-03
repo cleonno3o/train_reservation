@@ -20,7 +20,15 @@ struct SRTView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     
+    // 로그인 성공 시 열차 조회 화면으로 이동할지 여부
+    @State private var navigateToTrainSearch = false
+    
     var body: some View {
+        // 숨겨진 NavigationLink. navigateToTrainSearch가 true가 되면 활성화됨
+        NavigationLink(destination: SRTTrainSearchView(), isActive: $navigateToTrainSearch) {
+            EmptyView() // 화면에 아무것도 표시하지 않음
+        }
+        
         // Form은 설정이나 데이터 입력에 적합한 UI를 제공
         Form {
             Section(header: Text("SRT 로그인 정보")) {
@@ -56,7 +64,12 @@ struct SRTView: View {
         }
         // 알림창 표시
         .alert("로그인 결과", isPresented: $showingAlert) {
-            Button("확인") { }
+            Button("확인") {
+                // 로그인 성공 메시지일 경우에만 화면 전환
+                if alertMessage == "로그인 성공!" {
+                    navigateToTrainSearch = true
+                }
+            }
         } message: {
             Text(alertMessage)
         }
@@ -162,6 +175,7 @@ struct SRTView: View {
                     // 키체인에 아이디와 비밀번호 저장
                     KeychainHelper.shared.save(key: "srt_id", value: id)
                     KeychainHelper.shared.save(key: "srt_password", value: password)
+                    // navigateToTrainSearch = true // 화면 전환은 알림창 확인 후 진행
                 } else {
                     alertMessage = "알 수 없는 로그인 오류가 발생했습니다."
                 }
