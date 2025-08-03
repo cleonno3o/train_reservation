@@ -69,3 +69,6 @@ fastlane/test_output
 # Playgrounds
 timeline.xctimeline
 playground.xcworkspace
+
+# Ignore New Folder
+ref/
