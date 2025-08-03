@@ -78,7 +78,7 @@ struct SRTView: View {
                 }
             }
             .navigationDestination(isPresented: $navigateToTrainSearch) {
-                SRTTrainSearchView()
+                SRTSearchOptionView()
             }
         }
     }
