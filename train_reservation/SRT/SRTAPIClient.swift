@@ -2,7 +2,7 @@
 //  SRTAPIClient.swift
 //  train_reservation
 //
-//  Created by Gemini on 8/3/25.
+//  Created by sumin on 8/3/25.
 //
 
 import Foundation
@@ -35,7 +35,7 @@ class SRTAPIClient: ObservableObject {
         }
         
         guard let url = URL(string: SRTConstant.API_ENDPOINTS["login"]!)
- else { return false }
+        else { return false }
         
         var components = URLComponents()
         components.queryItems = [
@@ -133,18 +133,19 @@ class SRTAPIClient: ObservableObject {
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { return nil }
             
             if let responseString = String(data: data, encoding: .utf8) {
-                print("SRT Train Search Response: \(responseString)") // 응답 전체 출력
+                print("SRT Train Search Full Response: \(responseString)") // 응답 전체 출력
+                print("===========================================================")
             }
             
             // 응답 JSON 파싱
             let decoder = JSONDecoder()
-            let json = try decoder.decode([String: SRTResponseDataSet].self, from: data)
+            let fullResponse = try decoder.decode(SRTFullAPIResponse.self, from: data)
             
-            if let output1 = json["outDataSets"]?.dsOutput1 {
+            let output1 = fullResponse.outDataSets.dsOutput1
                 // SRT 열차만 필터링 (stlbTrnClsfCd == "17")
-                let srtTrains = output1.filter { $0.trainCode == "17" }
-                return srtTrains
-            }
+                let srtTrainArray = output1.filter { $0.trainCode == "17" }
+//                print(srtTrainArray)
+                return srtTrainArray
             
         } catch {
             print("Train search network or parsing error: \(error.localizedDescription)")

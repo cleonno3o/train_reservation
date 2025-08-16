@@ -2,7 +2,7 @@
 //  SRTSearchOptionView.swift
 //  train_reservation
 //
-//  Created by Gemini on 8/3/25.
+//  Created by sumin on 8/3/25.
 //
 
 import SwiftUI
@@ -36,7 +36,7 @@ struct SRTSearchOptionView: View {
     @State private var navigateToTrainResult = false
     
     // 조회된 열차 목록
-    @State private var trains: [SRTTrain] = []
+    @State private var trainArray: [SRTTrain] = []
     
     var body: some View {
         VStack {
@@ -94,7 +94,7 @@ struct SRTSearchOptionView: View {
             .navigationTitle("열차 조회") // 네비게이션 바 제목
             .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
             .navigationDestination(isPresented: $navigateToTrainResult) {
-                SRTTrainResultView(trains: trains)
+                SRTTrainResultView(trains: trainArray)
             }
         }
         /*
@@ -191,7 +191,8 @@ struct SRTSearchOptionView: View {
             passengerCount: passengerCount,
             netfunnelKey: netfunnelKey
         ) {
-            self.trains = fetchedTrainArray
+            self.trainArray = fetchedTrainArray
+            print("Fetched Trains: \(self.trainArray)") // Add this line
             navigateToTrainResult = true
         } else {
             trainSearchAlertMessage = "열차 조회 실패."

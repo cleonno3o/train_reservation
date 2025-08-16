@@ -2,7 +2,7 @@
 //  SettingView.swift
 //  train_reservation
 //
-//  Created by Gemini on 8/3/25.
+//  Created by sumin on 8/3/25.
 //
 
 import SwiftUI
