@@ -28,8 +28,7 @@ struct SRTSearchOptionView: View {
     @State private var showingTrainSearchAlert = false
     @State private var trainSearchAlertMessage = ""
     
-    // 열차 조회 결과 화면으로 이동할지 여부
-    @State private var navigateToTrainResult = false
+    @State private var showingTrainSelectionSheet = false
     
     // 조회된 열차 목록
     @State private var trainArray: [SRTTrain] = []
@@ -89,8 +88,11 @@ struct SRTSearchOptionView: View {
             }
             .navigationTitle("열차 조회") // 네비게이션 바 제목
             .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
-            .navigationDestination(isPresented: $navigateToTrainResult) {
-                SRTTrainResultView(trains: trainArray)
+            .sheet(isPresented: $showingTrainSelectionSheet) {
+                SRTTrainSelectionView(trains: trainArray) { selectedTrains in
+                    // TODO: Handle selectedTrains
+                    print("Selected Trains: \(selectedTrains)")
+                }
             }
         }
 
@@ -167,7 +169,7 @@ struct SRTSearchOptionView: View {
         ) {
             self.trainArray = fetchedTrainArray
             print("Fetched Trains: \(self.trainArray)") // Add this line
-            navigateToTrainResult = true
+            showingTrainSelectionSheet = true
         } else {
             trainSearchAlertMessage = "열차 조회 실패."
             showingTrainSearchAlert = true
