@@ -158,6 +158,7 @@ class SRTAPIClient: ObservableObject {
         passengerCount: Int,
         netfunnelKey: String? // 넷퍼넬 키 파라미터 추가
     ) async -> [SRTTrain]? {
+        print(self.isLoggedIn)
         guard self.isLoggedIn else { return nil } // 로그인 상태가 아니면 조회 불가
         
         guard let url = URL(string: SRTConstant.API_ENDPOINTS["search_schedule"]!)

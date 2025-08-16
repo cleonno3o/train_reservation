@@ -15,12 +15,12 @@ struct SettingView: View {
             // Section은 연관된 항목들을 그룹화
             Section(header: Text("계정 정보")) {
                 // 각 항목은 NavigationLink로 감싸서 다른 화면으로 이동 가능
-                NavigationLink(destination: SRTAccountView()) {
+                NavigationLink(destination: SRTSettingView()) {
                     // Label은 아이콘과 텍스트를 함께 표시
                     Label("SRT", systemImage: "person.badge.key.fill")
                 }
                 
-                NavigationLink(destination: KTXAccountView()) {
+                NavigationLink(destination: KTXSettingView()) {
                     Label("KTX", systemImage: "person.badge.key.fill")
                 }
             }

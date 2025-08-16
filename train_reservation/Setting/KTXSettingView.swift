@@ -8,7 +8,7 @@
 import SwiftUI
 
 // KTX 계정 정보 입력을 위한 View
-struct KTXAccountView: View {
+struct KTXSettingView: View {
     @State private var username = ""
     @State private var password = ""
     
@@ -45,6 +45,6 @@ struct KTXAccountView: View {
 
 #Preview {
     NavigationView {
-        KTXAccountView()
+        KTXSettingView()
     }
 }
