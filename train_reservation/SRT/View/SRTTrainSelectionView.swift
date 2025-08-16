@@ -1,0 +1,86 @@
+//
+//  SRTTrainResultView.swift
+//  train_reservation
+//
+//  Created by sumin on 8/3/25.
+//
+
+import SwiftUI
+
+// SRT 열차 조회 결과를 표시하는 View
+struct SRTTrainSelectionView: View {
+    // SRTSearchOptionView에서 전달받을 열차 목록
+    let trains: [SRTTrain]
+    // 선택된 열차들의 ID를 저장하는 Set
+    @State private var selections: Set<SRTTrain.ID> = []
+    // 현재 View를 닫기 위한 환경 변수
+    @Environment(\.dismiss) var dismiss
+    // 선택된 열차들을 상위 뷰로 전달하기 위한 클로저
+    var onReserveSelected: ([SRTTrain]) -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+            if trains.isEmpty {
+                Text("조회된 열차가 없습니다.")
+                    .foregroundColor(.gray)
+            } else {
+                // List에 selection 바인딩 추가
+                List(trains) {
+                    train in
+                    HStack { // Use HStack to place checkmark next to content
+                        VStack(alignment: .leading) {
+                            Text("\(train.trainName) \(train.trainNumber)")
+                                .font(.headline)
+                            Text("출발: \(train.depStationName) (\(train.depTime.prefix(2)):\(train.depTime.suffix(4).prefix(2))) - 도착: \(train.arrStationName) (\(train.arrTime.prefix(2)):\(train.arrTime.suffix(4).prefix(2)))")
+                                .font(.subheadline)
+                            Text("일반실: \(train.generalSeatState) / 특실: \(train.specialSeatState)")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer() // Pushes content to left and checkmark to right
+                        if selections.contains(train.id) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                    .contentShape(Rectangle()) // Make the whole row tappable
+                    .onTapGesture {
+                        if selections.contains(train.id) {
+                            selections.remove(train.id)
+                        } else {
+                            selections.insert(train.id)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("열차 조회 결과")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("취소") {
+                    dismiss() // 시트 닫기
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("확인") { // "예매하기"를 "확인"으로 변경
+                    // 선택된 열차들을 필터링
+                    let selectedTrains = trains.filter { selections.contains($0.id) }
+                    // 선택된 열차들을 클로저를 통해 상위 뷰로 전달
+                    onReserveSelected(selectedTrains)
+                    dismiss() // 현재 뷰 닫기
+                }
+                // 선택된 열차가 없으면 버튼 비활성화
+                .disabled(selections.isEmpty)
+            }
+        }
+    }
+
+//#Preview {
+//    NavigationView {
+//        // 미리보기에서는 빈 열차 목록을 전달
+//        SRTTrainSelectionView(trains: [])
+//    }
+    }
+}

@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 // SRT 열차 정보를 담을 구조체 (srt.py의 SRTTrain 클래스 참고)
-struct SRTTrain: Codable, Identifiable, CustomStringConvertible { // CustomStringConvertible 추가
+struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equatable { // CustomStringConvertible, Hashable, Equatable 추가
     let id = UUID() // SwiftUI List에서 Identifiable을 위해 필요
     let trainCode: String
     let trainName: String
@@ -102,5 +102,29 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible { // CustomStrin
         let trainLine = "[" + trainName + " " + trainNumber + "]"
 
         return "\(trainLine) \(month)/\(day) \(depHour):\(depMin)~\(arrHour):\(arrMin) \(depStationName)~\(arrStationName) 특실 \(specialSeatState), 일반실 \(generalSeatState) (\(duration)분)"
+    }
+
+    // MARK: - Hashable Conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(trainCode)
+        hasher.combine(trainNumber)
+        hasher.combine(depDate)
+        hasher.combine(depTime)
+        hasher.combine(depStationCode)
+        hasher.combine(arrDate)
+        hasher.combine(arrTime)
+        hasher.combine(arrStationCode)
+    }
+
+    // MARK: - Equatable Conformance
+    static func == (lhs: SRTTrain, rhs: SRTTrain) -> Bool {
+        return lhs.trainCode == rhs.trainCode &&
+               lhs.trainNumber == rhs.trainNumber &&
+               lhs.depDate == rhs.depDate &&
+               lhs.depTime == rhs.depTime &&
+               lhs.depStationCode == rhs.depStationCode &&
+               lhs.arrDate == rhs.arrDate &&
+               lhs.arrTime == rhs.arrTime &&
+               lhs.arrStationCode == rhs.arrStationCode
     }
 }
