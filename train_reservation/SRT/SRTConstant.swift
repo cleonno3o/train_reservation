@@ -97,4 +97,30 @@ struct SRTConstant {
         "reserve_info_referer": "\(SRT_MOBILE)/common/ATC/ATC0201L/view.do?pnrNo=",
         "refund": "\(SRT_MOBILE)/atc/selectListAtc02063_n.do",
     ]
+
+    // MARK: - NetFunnel Constants
+    struct NetFunnel {
+        static let WAIT_STATUS_PASS = "200"
+        static let WAIT_STATUS_FAIL = "201"
+        static let ALREADY_COMPLETED = "502"
+
+        static let OP_CODE: [String: String] = [
+            "getTidchkEnter": "5101",
+            "chkEnter": "5002",
+            "setComplete": "5004",
+        ]
+
+        static let DEFAULT_HEADERS: [String: String] = [
+            "User-Agent": SRTConstant.USER_AGENT,
+            "Accept": "*/*",
+            "Accept-Language": "ko,en;q=0.9,en-US;q=0.8",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Pragma": "no-cache",
+            "Referer": SRTConstant.SRT_MOBILE,
+            "Sec-Fetch-Dest": "script",
+            "Sec-Fetch-Mode": "no-cors",
+            "Sec-Fetch-Site": "cross-site",
+        ]
+    }
 }

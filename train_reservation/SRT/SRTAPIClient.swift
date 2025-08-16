@@ -150,7 +150,7 @@ class SRTAPIClient: ObservableObject {
     }
     
     // 열차 조회 요청
-    func searchTrains(
+    func searchTrain(
         departureStationCode: String,
         arrivalStationCode: String,
         date: String,

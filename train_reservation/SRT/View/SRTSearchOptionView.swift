@@ -24,8 +24,8 @@ struct SRTSearchOptionView: View {
     @State private var showingArrivalStationSelection = false
     
     // 넷퍼넬 키 및 웹뷰 표시 여부
-    @State private var netfunnelKey: String? = nil
-    @State private var showingNetFunnelWebView = false
+    // @State private var netfunnelKey: String? = nil
+    // @State private var showingNetFunnelWebView = false
     
     // 열차 조회 로딩 및 알림
     @State private var isLoadingTrainSearch = false
@@ -84,8 +84,10 @@ struct SRTSearchOptionView: View {
                 
                 Section {
                     Button("열차 조회") {
-                        // 열차 조회 버튼 클릭 시 넷퍼넬 웹뷰 표시
-                        showingNetFunnelWebView = true
+                        // 새로 만든 함수를 비동기 Task로 실행
+                        Task {
+                            await performNetFunnelAndSearch()
+                        }
                     }
                 }
             }
@@ -95,6 +97,7 @@ struct SRTSearchOptionView: View {
                 SRTTrainResultView(trains: trains)
             }
         }
+        /*
         // 웹뷰 테스트를 위해 구글을 띄우는 시트
         .sheet(isPresented: $showingNetFunnelWebView) {
             // NetFunnelWebView에 구글 URL을 전달하여 테스트합니다.
@@ -102,8 +105,21 @@ struct SRTSearchOptionView: View {
                 // 원래 이 부분에서 넷퍼넬 키를 받아 처리하지만, 지금은 테스트 중이므로 비워둡니다.
                 print("WebView onCompletion closure called. Received key: \(key ?? "nil")")
                 self.showingNetFunnelWebView = false // 웹뷰를 닫습니다.
+
+                // 받은 넷퍼넬 키(key)로 실제 열차 조회를 시작합니다.
+                // searchTrains는 async 함수이므로 Task 안에서 호출합니다.
+                Task {
+                    // 옵셔널 바인딩으로 안전하게 key를 사용합니다.
+                    if let netfunnelKey = key {
+                        await searchTrains(netfunnelKey: netfunnelKey)
+                    } else {
+                        // 키를 받지 못한 경우의 에러 처리
+                        print("넷퍼넬 키를 받지 못했습니다.")
+                    }
+                }
             }
         }
+        */
         // 열차 조회 로딩 인디케이터
         .overlay {
             if isLoadingTrainSearch {
@@ -121,8 +137,30 @@ struct SRTSearchOptionView: View {
         }
     }
     
+    // NetFunnelHelper를 실행하고 열차를 조회하는 새로운 함수
+    private func performNetFunnelAndSearch() async {
+        isLoadingTrainSearch = true // 로딩 인디케이터 표시
+
+        let netFunnelHelper = NetFunnelHelper(debug: true) // 디버그 메시지를 보기 위해 true로 설정
+        do {
+            // NetFunnelHelper를 실행하여 인증 키를 받아옴
+            let netfunnelKey = try await netFunnelHelper.run()
+            
+            // 성공적으로 키를 받으면, 기존의 searchTrains 함수를 호출
+            print("NetFunnel Key Received")
+            await requestTrainSearch(netfunnelKey: netfunnelKey)
+            
+        } catch {
+            // 실패 시, 사용자에게 알림
+            trainSearchAlertMessage = "넷퍼넬 인증에 실패했습니다: \(error.localizedDescription)"
+            showingTrainSearchAlert = true
+        }
+        
+        isLoadingTrainSearch = false // 로딩 인디케이터 숨김
+    }
+
     // 열차 조회 API 호출 함수
-    private func searchTrains(netfunnelKey: String) async {
+    private func requestTrainSearch(netfunnelKey: String) async {
         isLoadingTrainSearch = true
         trainSearchAlertMessage = ""
         showingTrainSearchAlert = false
@@ -145,7 +183,7 @@ struct SRTSearchOptionView: View {
         }
         
         // 열차 조회 API 호출
-        if let fetchedTrains = await srtAPIClient.searchTrains(
+        if let fetchedTrainArray = await srtAPIClient.searchTrain(
             departureStationCode: dptRsStnCd,
             arrivalStationCode: arvRsStnCd,
             date: dptDt,
@@ -153,7 +191,7 @@ struct SRTSearchOptionView: View {
             passengerCount: passengerCount,
             netfunnelKey: netfunnelKey
         ) {
-            self.trains = fetchedTrains
+            self.trains = fetchedTrainArray
             navigateToTrainResult = true
         } else {
             trainSearchAlertMessage = "열차 조회 실패."
