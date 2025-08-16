@@ -8,7 +8,7 @@
 import SwiftUI
 
 // 결제 정보 입력을 위한 View
-struct PaymentSettingView: View {
+struct SettingPaymentView: View {
     @State private var cardNumber = ""
     @State private var cardPassword = ""
     @State private var birthDate = ""
@@ -126,6 +126,6 @@ struct PaymentSettingView: View {
 
 #Preview {
     NavigationView {
-        PaymentSettingView()
+        SettingPaymentView()
     }
 }

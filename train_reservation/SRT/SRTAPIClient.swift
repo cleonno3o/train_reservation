@@ -7,84 +7,13 @@
 
 import Foundation
 
-// SRT 열차 정보를 담을 구조체 (srt.py의 SRTTrain 클래스 참고)
-struct SRTTrain: Codable, Identifiable {
-    let id = UUID() // SwiftUI List에서 Identifiable을 위해 필요
-    let trainCode: String
-    let trainName: String
-    let trainNumber: String
-    
-    let depDate: String
-    let depTime: String
-    let depStationCode: String
-    let depStationName: String
-    
-    let arrDate: String
-    let arrTime: String
-    let arrStationCode: String
-    let arrStationName: String
-    
-    let generalSeatState: String // 일반실 좌석 상태 (예: "예약가능", "매진")
-    let specialSeatState: String // 특실 좌석 상태
-    
-    // Codable 키 매핑 (JSON 키와 Swift 속성 이름이 다를 경우)
-    enum CodingKeys: String, CodingKey {
-        case trainCode = "stlbTrnClsfCd"
-        case trainName = "stlbTrnClsfCdNm" // srt.py에서는 TRAIN_NAME 딕셔너리 사용
-        case trainNumber = "trnNo"
-        
-        case depDate = "dptDt"
-        case depTime = "dptTm"
-        case depStationCode = "dptRsStnCd"
-        case depStationName = "dptRsStnCdNm"
-        
-        case arrDate = "arvDt"
-        case arrTime = "arvTm"
-        case arrStationCode = "arvRsStnCd"
-        case arrStationName = "arvRsStnCdNm"
-        
-        case generalSeatState = "gnrmRsvPsbStr"
-        case specialSeatState = "sprmRsvPsbStr"
-    }
-    
-    // 편의를 위한 초기화 (JSON 파싱 시 사용)
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        trainCode = try container.decode(String.self, forKey: .trainCode)
-        trainName = try container.decode(String.self, forKey: .trainName)
-        trainNumber = try container.decode(String.self, forKey: .trainNumber)
-        
-        depDate = try container.decode(String.self, forKey: .depDate)
-        depTime = try container.decode(String.self, forKey: .depTime)
-        depStationCode = try container.decode(String.self, forKey: .depStationCode)
-        depStationName = try container.decode(String.self, forKey: .depStationName)
-        
-        arrDate = try container.decode(String.self, forKey: .arrDate)
-        arrTime = try container.decode(String.self, forKey: .arrTime)
-        arrStationCode = try container.decode(String.self, forKey: .arrStationCode)
-        arrStationName = try container.decode(String.self, forKey: .arrStationName)
-        
-        generalSeatState = try container.decode(String.self, forKey: .generalSeatState)
-        specialSeatState = try container.decode(String.self, forKey: .specialSeatState)
-    }
-}
-
-// SRT API 응답 데이터 구조 (srt.py의 SRTResponseData 참고)
-struct SRTResponseDataSet: Codable {
-    let dsOutput1: [SRTTrain]
-    // 다른 dsOutputX가 있다면 여기에 추가
-    
-    enum CodingKeys: String, CodingKey {
-        case dsOutput1 = "dsOutput1"
-    }
-}
-
 // SRT API 호출을 담당하는 클라이언트
 class SRTAPIClient: ObservableObject {
     // 로그인 상태를 외부에 알리기 위해 ObservableObject 사용
     @Published var isLoggedIn = false
     
     // 로그인 요청
+    // TODO: 이미 로그인 상태일 경우 pass 로직 작성
     func login(id: String, password: String) async -> Bool {
         // srt.py의 getLoginType 함수 로직을 그대로 사용
         func getLoginType(for id: String) -> String {
@@ -139,7 +68,9 @@ class SRTAPIClient: ObservableObject {
             if let responseString = String(data: data, encoding: .utf8) {
                 print("SRT Login Response: \(responseString)")
                 if responseString.contains("userMap") {
-                    self.isLoggedIn = true
+                    await MainActor.run {
+                        self.isLoggedIn = true
+                    }
                     return true
                 }
             }
@@ -158,11 +89,9 @@ class SRTAPIClient: ObservableObject {
         passengerCount: Int,
         netfunnelKey: String? // 넷퍼넬 키 파라미터 추가
     ) async -> [SRTTrain]? {
-        print(self.isLoggedIn)
         guard self.isLoggedIn else { return nil } // 로그인 상태가 아니면 조회 불가
         
-        guard let url = URL(string: SRTConstant.API_ENDPOINTS["search_schedule"]!)
- else { return nil }
+        guard let url = URL(string: SRTConstant.API_ENDPOINTS["search_schedule"]!) else { return nil }
         
         // 요청 바디 데이터 구성 (srt.py의 search_train data 파라미터 참고)
         var components = URLComponents()

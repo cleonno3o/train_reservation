@@ -9,6 +9,7 @@ import SwiftUI
 
 // SRT 로그인 및 예매 화면을 위한 View
 struct SRTView: View {
+    @EnvironmentObject var srtAPIClient: SRTAPIClient
     // 사용자 아이디와 비밀번호를 저장하는 상태 변수
     @State private var id = ""
     @State private var password = ""
@@ -83,107 +84,19 @@ struct SRTView: View {
         }
     }
     
-    // 아이디 타입(회원번호, 이메일, 전화번호)을 결정하는 헬퍼 함수
-    private func getLoginType(for id: String) -> String {
-        // 이메일 정규식 (간단화)
-        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        // 전화번호 정규식 (간단화, 하이픈 포함 가능)
-        let phoneRegex = "^01(?:0|1|[6-9])-(?:\\d{3}|\\d{4})-\\d{4}$"
-        
-        if id.range(of: emailRegex, options: .regularExpression) != nil {
-            return "2" // 이메일
-        } else if id.range(of: phoneRegex, options: .regularExpression) != nil {
-            return "3" // 전화번호
-        } else {
-            return "1" // 회원번호
-        }
-    }
-    
     // SRT 로그인 요청을 처리하는 비동기 함수
     private func loginSRT() async {
         isLoading = true // 로딩 시작
         alertMessage = ""
         showingAlert = false
-        
-        // 전화번호인 경우 하이픈 제거
-        var processedId = id
-        if getLoginType(for: id) == "3" {
-            processedId = id.replacingOccurrences(of: "-", with: "")
-        }
-        
-        // 요청 URL
-        guard let url = URL(string: SRTConstant.API_ENDPOINTS["login"]!) else {
-            alertMessage = "잘못된 URL입니다."
-            showingAlert = true
-            isLoading = false
-            return
-        }
-        
-        // 요청 바디 데이터 구성
-        var components = URLComponents()
-        components.queryItems = [
-            URLQueryItem(name: "auto", value: "Y"),
-            URLQueryItem(name: "check", value: "Y"),
-            URLQueryItem(name: "page", value: "menu"),
-            URLQueryItem(name: "deviceKey", value: "-"),
-            URLQueryItem(name: "customerYn", value: ""),
-            URLQueryItem(name: "login_referer", value: SRTConstant.API_ENDPOINTS["main"]!),
-            URLQueryItem(name: "srchDvCd", value: getLoginType(for: id)),
-            URLQueryItem(name: "srchDvNm", value: processedId),
-            URLQueryItem(name: "hmpgPwdCphd", value: password)
-        ]
-        
-        guard let httpBody = components.query?.data(using: .utf8) else {
-            alertMessage = "요청 데이터 구성 실패."
-            showingAlert = true
-            isLoading = false
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        // srt.py의 User-Agent 및 Default Headers 적용
-        request.setValue(SRTConstant.USER_AGENT, forHTTPHeaderField: "User-Agent")
-        request.setValue(SRTConstant.DEFAULT_HEADERS["Accept"], forHTTPHeaderField: "Accept")
-        
-        request.httpBody = httpBody
-        
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                alertMessage = "서버 응답 오류."
-                showingAlert = true
-                isLoading = false
-                return
-            }
-            
-            // 응답 데이터를 문자열로 변환하여 파싱
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("SRT Login Response: \(responseString)") // 디버깅을 위해 응답 전체 출력
-                
-                if responseString.contains("존재하지않는 회원입니다") || responseString.contains("비밀번호 오류") {
-                    alertMessage = "아이디 또는 비밀번호가 올바르지 않습니다."
-                } else if responseString.contains("Your IP Address Blocked") {
-                    alertMessage = "IP 주소가 차단되었습니다."
-                } else if responseString.contains("userMap") {
-                    // 로그인 성공으로 간주 (더 정교한 파싱 필요)
-                    alertMessage = "로그인 성공!"
-                    // 키체인에 아이디와 비밀번호 저장
-                    KeychainHelper.shared.save(key: "srt_id", value: id)
-                    KeychainHelper.shared.save(key: "srt_password", value: password)
-                    // navigateToTrainSearch = true // 화면 전환은 알림창 확인 후 진행
-                } else {
-                    alertMessage = "알 수 없는 로그인 오류가 발생했습니다."
-                }
-            } else {
-                alertMessage = "응답 데이터를 읽을 수 없습니다."
-            }
-            
-        } catch {
-            alertMessage = "네트워크 오류: \(error.localizedDescription)"
+
+        let success = await srtAPIClient.login(id: id, password: password)
+
+        if success {
+            alertMessage = "로그인 성공!"
+            // KeychainHelper.shared.save는 SRTSettingView에서 처리
+        } else {
+            alertMessage = "로그인 실패. 아이디 또는 비밀번호를 확인해주세요."
         }
         
         showingAlert = true // 알림창 표시

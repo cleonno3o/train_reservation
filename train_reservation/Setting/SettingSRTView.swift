@@ -8,7 +8,7 @@
 import SwiftUI
 
 // SRT 계정 정보 입력을 위한 View
-struct SRTSettingView: View {
+struct SettingSRTView: View {
     // @State는 View의 상태를 저장하는 변수. 값이 바뀌면 화면이 자동으로 업데이트됨.
     @State private var username = ""
     @State private var password = ""
@@ -52,6 +52,6 @@ struct SRTSettingView: View {
 
 #Preview {
     NavigationView {
-        SRTSettingView()
+        SettingSRTView()
     }
 }

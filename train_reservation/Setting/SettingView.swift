@@ -15,18 +15,18 @@ struct SettingView: View {
             // Section은 연관된 항목들을 그룹화
             Section(header: Text("계정 정보")) {
                 // 각 항목은 NavigationLink로 감싸서 다른 화면으로 이동 가능
-                NavigationLink(destination: SRTSettingView()) {
+                NavigationLink(destination: SettingSRTView()) {
                     // Label은 아이콘과 텍스트를 함께 표시
                     Label("SRT", systemImage: "person.badge.key.fill")
                 }
                 
-                NavigationLink(destination: KTXSettingView()) {
+                NavigationLink(destination: SettingKTXView()) {
                     Label("KTX", systemImage: "person.badge.key.fill")
                 }
             }
             
             Section(header: Text("결제 수단")) {
-                NavigationLink(destination: PaymentSettingView()) {
+                NavigationLink(destination: SettingPaymentView()) {
                     Label("결제", systemImage: "creditcard.fill")
                 }
             }
