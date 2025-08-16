@@ -23,10 +23,6 @@ struct SRTSearchOptionView: View {
     @State private var showingDepartureStationSelection = false
     @State private var showingArrivalStationSelection = false
     
-    // 넷퍼넬 키 및 웹뷰 표시 여부
-    // @State private var netfunnelKey: String? = nil
-    // @State private var showingNetFunnelWebView = false
-    
     // 열차 조회 로딩 및 알림
     @State private var isLoadingTrainSearch = false
     @State private var showingTrainSearchAlert = false
@@ -97,29 +93,7 @@ struct SRTSearchOptionView: View {
                 SRTTrainResultView(trains: trainArray)
             }
         }
-        /*
-        // 웹뷰 테스트를 위해 구글을 띄우는 시트
-        .sheet(isPresented: $showingNetFunnelWebView) {
-            // NetFunnelWebView에 구글 URL을 전달하여 테스트합니다.
-            NetFunnelWebView(url: URL(string: "https://www.google.com")!) { key in
-                // 원래 이 부분에서 넷퍼넬 키를 받아 처리하지만, 지금은 테스트 중이므로 비워둡니다.
-                print("WebView onCompletion closure called. Received key: \(key ?? "nil")")
-                self.showingNetFunnelWebView = false // 웹뷰를 닫습니다.
 
-                // 받은 넷퍼넬 키(key)로 실제 열차 조회를 시작합니다.
-                // searchTrains는 async 함수이므로 Task 안에서 호출합니다.
-                Task {
-                    // 옵셔널 바인딩으로 안전하게 key를 사용합니다.
-                    if let netfunnelKey = key {
-                        await searchTrains(netfunnelKey: netfunnelKey)
-                    } else {
-                        // 키를 받지 못한 경우의 에러 처리
-                        print("넷퍼넬 키를 받지 못했습니다.")
-                    }
-                }
-            }
-        }
-        */
         // 열차 조회 로딩 인디케이터
         .overlay {
             if isLoadingTrainSearch {
