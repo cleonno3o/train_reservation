@@ -1,5 +1,5 @@
 //
-//  StationSelectionView.swift
+//  SRTStationSelectionView.swift
 //  train_reservation
 //
 //  Created by Gemini on 8/3/25.
@@ -8,14 +8,14 @@
 import SwiftUI
 
 // 역 선택 화면을 위한 View
-struct StationSelectionView: View {
+struct SRTStationSelectionView: View {
     // 선택된 역을 외부 View와 동기화하기 위한 Binding 변수
     @Binding var selectedStation: String
     // 현재 View를 닫기 위한 환경 변수
     @Environment(\.dismiss) var dismiss
     
-    // SRTConstants에서 모든 역 이름 목록을 가져옴
-    let stations = SRTConstants.STATION_CODE.keys.sorted()
+    // SRTConstant에서 모든 역 이름 목록을 가져옴
+    let stations = SRTConstant.STATION_CODE.keys.sorted()
     
     var body: some View {
         NavigationView {
@@ -41,5 +41,5 @@ struct StationSelectionView: View {
 
 #Preview {
     // 미리보기에서는 Binding 변수를 .constant로 제공
-    StationSelectionView(selectedStation: .constant("수서"))
+    SRTStationSelectionView(selectedStation: .constant("수서"))
 }

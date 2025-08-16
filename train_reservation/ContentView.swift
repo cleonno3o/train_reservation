@@ -36,8 +36,8 @@ struct ContentView: View {
                         .cornerRadius(10)
                 }
 
-                // SettingsView로 이동하는 네비게이션 링크
-                NavigationLink(destination: SettingsView()) {
+                // SettingView로 이동하는 네비게이션 링크
+                NavigationLink(destination: SettingView()) {
                     Text("설정")
                         .font(.title)
                         .padding()

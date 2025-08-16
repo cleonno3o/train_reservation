@@ -1,5 +1,5 @@
 //
-//  PaymentSettingsView.swift
+//  PaymentSettingView.swift
 //  train_reservation
 //
 //  Created by Gemini on 8/3/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 // 결제 정보 입력을 위한 View
-struct PaymentSettingsView: View {
+struct PaymentSettingView: View {
     @State private var cardNumber = ""
     @State private var cardPassword = ""
     @State private var birthDate = ""
@@ -126,6 +126,6 @@ struct PaymentSettingsView: View {
 
 #Preview {
     NavigationView {
-        PaymentSettingsView()
+        PaymentSettingView()
     }
 }

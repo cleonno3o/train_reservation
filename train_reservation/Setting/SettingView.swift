@@ -1,5 +1,5 @@
 //
-//  SettingsView.swift
+//  SettingView.swift
 //  train_reservation
 //
 //  Created by Gemini on 8/3/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 // 설정 화면을 위한 View
-struct SettingsView: View {
+struct SettingView: View {
     var body: some View {
         // List는 테이블 형태의 목록을 만듦
         List {
@@ -26,7 +26,7 @@ struct SettingsView: View {
             }
             
             Section(header: Text("결제 수단")) {
-                NavigationLink(destination: PaymentSettingsView()) {
+                NavigationLink(destination: PaymentSettingView()) {
                     Label("결제", systemImage: "creditcard.fill")
                 }
             }
@@ -39,6 +39,6 @@ struct SettingsView: View {
 #Preview {
     // 미리보기에서 네비게이션 제목을 확인하기 위해 NavigationView 사용
     NavigationView {
-        SettingsView()
+        SettingView()
     }
 }

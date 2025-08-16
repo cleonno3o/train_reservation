@@ -112,7 +112,7 @@ struct SRTView: View {
         }
         
         // 요청 URL
-        guard let url = URL(string: SRTConstants.API_ENDPOINTS["login"]!) else {
+        guard let url = URL(string: SRTConstant.API_ENDPOINTS["login"]!) else {
             alertMessage = "잘못된 URL입니다."
             showingAlert = true
             isLoading = false
@@ -127,7 +127,7 @@ struct SRTView: View {
             URLQueryItem(name: "page", value: "menu"),
             URLQueryItem(name: "deviceKey", value: "-"),
             URLQueryItem(name: "customerYn", value: ""),
-            URLQueryItem(name: "login_referer", value: SRTConstants.API_ENDPOINTS["main"]!),
+            URLQueryItem(name: "login_referer", value: SRTConstant.API_ENDPOINTS["main"]!),
             URLQueryItem(name: "srchDvCd", value: getLoginType(for: id)),
             URLQueryItem(name: "srchDvNm", value: processedId),
             URLQueryItem(name: "hmpgPwdCphd", value: password)
@@ -145,8 +145,8 @@ struct SRTView: View {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
         // srt.py의 User-Agent 및 Default Headers 적용
-        request.setValue(SRTConstants.USER_AGENT, forHTTPHeaderField: "User-Agent")
-        request.setValue(SRTConstants.DEFAULT_HEADERS["Accept"], forHTTPHeaderField: "Accept")
+        request.setValue(SRTConstant.USER_AGENT, forHTTPHeaderField: "User-Agent")
+        request.setValue(SRTConstant.DEFAULT_HEADERS["Accept"], forHTTPHeaderField: "Accept")
         
         request.httpBody = httpBody
         

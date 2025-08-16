@@ -1,5 +1,5 @@
 //
-//  SRTConstants.swift
+//  SRTConstant.swift
 //  train_reservation
 //
 //  Created by Gemini on 8/3/25.
@@ -8,7 +8,7 @@
 import Foundation
 
 // srt.py에서 추출한 SRT 관련 상수들을 모아둔 구조체
-struct SRTConstants {
+struct SRTConstant {
     // User-Agent 문자열
     static let USER_AGENT = "Mozilla/5.0 (Linux; Android 14; SM-S912N Build/UP1A.231005.007; wv) AppleWebKit/537.36(KHTML, like Gecko) Version/4.0 Chrome/131.0.6778.260 Mobile Safari/537.36SRT-APP-Android V.2.0.33"
     
