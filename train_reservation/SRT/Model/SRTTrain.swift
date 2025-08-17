@@ -28,7 +28,7 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
     let generalSeatState: String // 일반실 좌석 상태 (예: "예약가능", "매진")
     let specialSeatState: String // 특실 좌석 상태
     let reservePossibleName: String
-    let reservePossibleCode: String // -1: 예약대기 없음, 9: 예약대기 가능, 0: 매진, -2: 예약대기 불가능
+    let reservePossibleCode: Int // -1: 예약대기 없음, 9: 예약대기 가능, 0: 매진, -2: 예약대기 불가능
     
     // Codable 키 매핑 (JSON 키와 Swift 속성 이름이 다를 경우)
     enum CodingKeys: String, CodingKey {
@@ -73,7 +73,8 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
         generalSeatState = try container.decode(String.self, forKey: .generalSeatState)
         specialSeatState = try container.decode(String.self, forKey: .specialSeatState)
         reservePossibleName = try container.decode(String.self, forKey: .reservePossibleName)
-        reservePossibleCode = try container.decode(String.self, forKey: .reservePossibleCode)
+//      -1: 예약대기 없음, 9: 예약대기 가능, 0: 매진, -2: 예약대기 불가능
+        reservePossibleCode = Int(try container.decode(String.self, forKey: .reservePossibleCode)) ?? -999
         
         // SRTConstant에서 조회하여 할당하는 속성들
         trainName = SRTConstant.TRAIN_NAME[trainCode] ?? "알 수 없음"
@@ -126,5 +127,20 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
                lhs.arrDate == rhs.arrDate &&
                lhs.arrTime == rhs.arrTime &&
                lhs.arrStationCode == rhs.arrStationCode
+    }
+    
+    func isGeneralSeatAvail() -> Bool {
+        return "예약가능" == self.generalSeatState
+    }
+    
+    func isSpecialSeatAvail() -> Bool {
+        return "예약가능" == self.specialSeatState
+    }
+    func isReserveStandbyAvail() -> Bool {
+        return self.reservePossibleCode == 9
+    }
+    
+    func isSeatAvail() -> Bool {
+        return self.isGeneralSeatAvail() || self.isSpecialSeatAvail()
     }
 }

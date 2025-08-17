@@ -32,6 +32,16 @@ struct SRTSearchOptionView: View {
     
     // 조회된 열차 목록
     @State private var trainArray: [SRTTrain] = []
+
+    // 넷퍼넬 키 저장
+    @State private var currentNetfunnelKey: String? = nil
+
+    // 예매 취소 플래그
+    @State private var isReservationCancelled = false
+
+    // 예매 결과 알림
+    @State private var showingReservationResultAlert = false
+    @State private var reservationResultMessage = ""
     
     // 예매 로딩 및 시간 표시
     @State private var showingReservationOverlay = false
@@ -95,11 +105,14 @@ struct SRTSearchOptionView: View {
             .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
             .sheet(isPresented: $showingTrainSelectionSheet) {
                 SRTTrainSelectionView(trainArray: trainArray) { selectedTrainArray in
-                    // Handle selectedTrains and start reservation UI
                     print("Selected Trains: \(selectedTrainArray)")
-                    // For now, just show the overlay
+                    // 예매 로직 시작
+                    self.isReservationCancelled = false // 예매 취소 플래그 초기화
                     self.showingReservationOverlay = true
                     self.reservationStartTime = Date()
+                    Task {
+                        await performReservation(selectedTrainArray: selectedTrainArray)
+                    }
                 }
             }
         }
@@ -127,6 +140,7 @@ struct SRTSearchOptionView: View {
                         Divider()
                             .padding(.vertical, 5)
                         Button(action: {
+                            self.isReservationCancelled = true // 예매 취소 플래그 설정
                             self.showingReservationOverlay = false
                         }) {
                             Text("취소")
@@ -174,6 +188,8 @@ struct SRTSearchOptionView: View {
             // NetFunnelHelper를 실행하여 인증 키를 받아옴
             let netfunnelKey = try await netFunnelHelper.run()
             
+            self.currentNetfunnelKey = netfunnelKey // 넷퍼넬 키 저장
+            
             // 성공적으로 키를 받으면, 기존의 searchTrains 함수를 호출
             print("NetFunnel Key Received")
             await requestTrainSearch(netfunnelKey: netfunnelKey)
@@ -211,7 +227,7 @@ struct SRTSearchOptionView: View {
         }
         
         // 열차 조회 API 호출
-        if let fetchedTrainArray = await srtAPIClient.searchTrain(
+        if let fetchedTrainArray = await srtAPIClient.search(
             departureStationCode: dptRsStnCd,
             arrivalStationCode: arvRsStnCd,
             date: dptDt,
@@ -228,6 +244,85 @@ struct SRTSearchOptionView: View {
         }
         
         isLoadingTrainSearch = false
+    }
+    
+
+    // 예매 로직 구현 함수
+    private func performReservation(selectedTrainArray: [SRTTrain]) async {
+        guard let netfunnelKey = currentNetfunnelKey else {
+            reservationResultMessage = "넷퍼넬 키가 없습니다. 다시 시도해주세요."
+            showingReservationResultAlert = true
+            showingReservationOverlay = false
+            return
+        }
+
+        // 날짜 및 시간 포맷팅 (예매 시 재사용)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd"
+        let dptDt = dateFormatter.string(from: selectedDate)
+
+        dateFormatter.dateFormat = "HHmmss"
+        let dptTm = dateFormatter.string(from: selectedTime)
+
+        // 출발역, 도착역 코드로 변환 (예매 시 재사용)
+        guard let dptRsStnCd = SRTConstant.STATION_CODE[departureStation],
+              let arvRsStnCd = SRTConstant.STATION_CODE[arrivalStation] else {
+            reservationResultMessage = "선택된 역의 코드를 찾을 수 없습니다."
+            showingReservationResultAlert = true
+            showingReservationOverlay = false
+            return
+        }
+
+        while !isReservationCancelled {
+            print("예매 시도 중...")
+            // 최신 열차 정보 다시 조회
+            if let updatedTrainArray = await srtAPIClient.search(
+                departureStationCode: dptRsStnCd,
+                arrivalStationCode: arvRsStnCd,
+                date: dptDt,
+                time: dptTm,
+                passengerCount: passengerCount,
+                netfunnelKey: netfunnelKey
+            ) {
+                for selectedTrain in selectedTrainArray {
+                    // 선택된 열차와 일치하는 최신 정보 찾기
+                    if let currentTrain = updatedTrainArray.first(where: { $0.id == selectedTrain.id }) {
+                        // 좌석 가용성 확인 (간단화: 일반실 또는 특실이 '예약가능'인 경우)
+                        let isGeneralAvailable = currentTrain.generalSeatState.contains("예약가능")
+                        let isSpecialAvailable = currentTrain.specialSeatState.contains("예약가능")
+
+//                        if isGeneralAvailable || isSpecialAvailable {
+//                            print("좌석 발견! 예매 시도: \(currentTrain.trainName) \(currentTrain.trainNumber)")
+//                            // TODO: SeatPreference는 사용자 선택에 따라 달라져야 함. 일단 일반실 우선으로 가정.
+//                            let preference: SeatPreference = isGeneralAvailable ? .generalOnly : .specialOnly
+//
+//                            if await srtAPIClient.reserve(<#T##train: SRTTrain##SRTTrain#>, preference: <#T##SeatPreference#>) {
+//                                reservationResultMessage = "예매 성공!"
+//                                showingReservationResultAlert = true
+//                                showingReservationOverlay = false
+//                                return // 예매 성공 시 함수 종료
+//                            } else {
+//                                print("예매 실패: \(currentTrain.trainName) \(currentTrain.trainNumber)")
+//                            }
+//                        }
+                    }
+                }
+            } else {
+                print("열차 정보 업데이트 실패.")
+            }
+
+            // 예매 취소되지 않았다면 1초 대기 후 재시도
+            if !isReservationCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+            }
+        }
+
+        // 루프 종료 (취소되었거나 예매 성공)
+        if isReservationCancelled {
+            reservationResultMessage = "예매가 취소되었습니다."
+            showingReservationResultAlert = true
+            showingReservationOverlay = false
+        }
     }
 }
 

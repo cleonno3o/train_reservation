@@ -17,7 +17,10 @@ struct SRTConstant {
         "User-Agent": USER_AGENT,
         "Accept": "application/json",
     ]
-    
+    static let RESERVE_JOB_ID: [String:String] = [
+        "PERSONAL": "1101",  // 개인 예약
+        "STANDBY": "1102",   // 예약 대기
+    ]
     // 역 코드 딕셔너리 (역 이름: 역 코드)
     static let STATION_CODE: [String: String] = [
         "수서": "0551",
