@@ -89,9 +89,9 @@ struct SRTSearchOptionView: View {
             .navigationTitle("열차 조회") // 네비게이션 바 제목
             .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
             .sheet(isPresented: $showingTrainSelectionSheet) {
-                SRTTrainSelectionView(trains: trainArray) { selectedTrains in
+                SRTTrainSelectionView(trainArray: trainArray) { selectedTrainArray in
                     // TODO: Handle selectedTrains
-                    print("Selected Trains: \(selectedTrains)")
+                    print("Selected Trains: \(selectedTrainArray)")
                 }
             }
         }

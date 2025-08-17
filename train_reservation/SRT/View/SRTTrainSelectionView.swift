@@ -10,9 +10,9 @@ import SwiftUI
 // SRT 열차 조회 결과를 표시하는 View
 struct SRTTrainSelectionView: View {
     // SRTSearchOptionView에서 전달받을 열차 목록
-    let trains: [SRTTrain]
+    let trainArray: [SRTTrain]
     // 선택된 열차들의 ID를 저장하는 Set
-    @State private var selections: Set<SRTTrain.ID> = []
+    @State private var currSelectedSet: Set<SRTTrain.ID> = []
     // 현재 View를 닫기 위한 환경 변수
     @Environment(\.dismiss) var dismiss
     // 선택된 열차들을 상위 뷰로 전달하기 위한 클로저
@@ -21,12 +21,12 @@ struct SRTTrainSelectionView: View {
     var body: some View {
         NavigationView {
             VStack {
-            if trains.isEmpty {
+            if trainArray.isEmpty {
                 Text("조회된 열차가 없습니다.")
                     .foregroundColor(.gray)
             } else {
                 // List에 selection 바인딩 추가
-                List(trains) {
+                List(trainArray) {
                     train in
                     HStack { // Use HStack to place checkmark next to content
                         VStack(alignment: .leading) {
@@ -39,17 +39,17 @@ struct SRTTrainSelectionView: View {
                                 .foregroundColor(.secondary)
                         }
                         Spacer() // Pushes content to left and checkmark to right
-                        if selections.contains(train.id) {
+                        if currSelectedSet.contains(train.id) {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.accentColor)
                         }
                     }
                     .contentShape(Rectangle()) // Make the whole row tappable
                     .onTapGesture {
-                        if selections.contains(train.id) {
-                            selections.remove(train.id)
+                        if currSelectedSet.contains(train.id) {
+                            currSelectedSet.remove(train.id)
                         } else {
-                            selections.insert(train.id)
+                            currSelectedSet.insert(train.id)
                         }
                     }
                 }
@@ -66,13 +66,13 @@ struct SRTTrainSelectionView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("확인") { // "예매하기"를 "확인"으로 변경
                     // 선택된 열차들을 필터링
-                    let selectedTrains = trains.filter { selections.contains($0.id) }
+                    let selectedTrainArray = trainArray.filter { currSelectedSet.contains($0.id) }
                     // 선택된 열차들을 클로저를 통해 상위 뷰로 전달
-                    onReserveSelected(selectedTrains)
+                    onReserveSelected(selectedTrainArray)
                     dismiss() // 현재 뷰 닫기
                 }
                 // 선택된 열차가 없으면 버튼 비활성화
-                .disabled(selections.isEmpty)
+                .disabled(currSelectedSet.isEmpty)
             }
         }
     }
