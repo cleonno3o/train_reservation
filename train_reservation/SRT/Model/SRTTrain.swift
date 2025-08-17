@@ -19,11 +19,15 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
     let depTime: String
     let depStationCode: String
     let depStationName: String
+    let depStationRunOrder: String
+    let depStationConstitutionOrder: String
     
     let arrDate: String
     let arrTime: String
     let arrStationCode: String
     let arrStationName: String
+    let arrStationRunOrder: String
+    let arrStationConstitutionOrder: String
     
     let generalSeatState: String // 일반실 좌석 상태 (예: "예약가능", "매진")
     let specialSeatState: String // 특실 좌석 상태
@@ -40,11 +44,15 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
         case depDate = "dptDt"
         case depTime = "dptTm"
         case depStationCode = "dptRsStnCd"
+        case depStationRunOrder = "dptStnRunOrdr"
+        case depStationConstitutionOrder = "dptStnConsOrdr"
         
         // 도착 정보
         case arrDate = "arvDt"
         case arrTime = "arvTm"
         case arrStationCode = "arvRsStnCd"
+        case arrStationRunOrder = "arvStnRunOrdr"
+        case arrStationConstitutionOrder = "arvStnConsOrdr"
         
         // 좌석 정보
         case generalSeatState = "gnrmRsvPsbStr"
@@ -65,10 +73,14 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
         depDate = try container.decode(String.self, forKey: .depDate)
         depTime = try container.decode(String.self, forKey: .depTime)
         depStationCode = try container.decode(String.self, forKey: .depStationCode)
+        depStationRunOrder = try container.decode(String.self, forKey: .depStationRunOrder)
+        depStationConstitutionOrder = try container.decode(String.self, forKey: .depStationConstitutionOrder)
         
         arrDate = try container.decode(String.self, forKey: .arrDate)
         arrTime = try container.decode(String.self, forKey: .arrTime)
         arrStationCode = try container.decode(String.self, forKey: .arrStationCode)
+        arrStationRunOrder = try container.decode(String.self, forKey: .arrStationRunOrder)
+        arrStationConstitutionOrder = try container.decode(String.self, forKey: .arrStationConstitutionOrder)
         
         generalSeatState = try container.decode(String.self, forKey: .generalSeatState)
         specialSeatState = try container.decode(String.self, forKey: .specialSeatState)

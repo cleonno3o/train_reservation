@@ -31,6 +31,8 @@ class SRTAPIClient: ObservableObject {
     @Published var membershipName: String?
     @Published var phoneNumber: String?
     
+    private let netFunnelHelper = NetFunnelHelper(debug: true)
+    
     // 로그인 요청
     // TODO: 이미 로그인 상태일 경우 pass 로직 작성
     func login(id: String, password: String) async -> Bool {
@@ -112,12 +114,15 @@ class SRTAPIClient: ObservableObject {
         arrivalStationCode: String,
         date: String,
         time: String,
-        passengerCount: Int,
-        netfunnelKey: String? // 넷퍼넬 키 파라미터 추가
+        passengerCount: Int
     ) async -> [SRTTrain]? {
         guard self.isLoggedIn else { return nil } // 로그인 상태가 아니면 조회 불가
         
         guard let url = URL(string: SRTConstant.API_ENDPOINTS["search_schedule"]!) else { return nil }
+        guard let netfunnelKey = try? await self.netFunnelHelper.run() else {
+            print("SRTAPIClient: Failed to get netFunnelKey.")
+            return nil
+        }
         
         // 요청 바디 데이터 구성 (srt.py의 search_train data 파라미터 참고)
         var components = URLComponents()
@@ -140,7 +145,7 @@ class SRTAPIClient: ObservableObject {
             URLQueryItem(name: "tkTrnNo", value: ""),
             URLQueryItem(name: "tkTripChgFlg", value: ""),
             URLQueryItem(name: "dlayTnumAplFlg", value: "Y"),
-            URLQueryItem(name: "netfunnelKey", value: netfunnelKey ?? ""), // 전달받은 키 사용, 없으면 빈 문자열
+            URLQueryItem(name: "netfunnelKey", value: netfunnelKey),
         ]
         
         guard let httpBody = components.query?.data(using: .utf8) else { return nil }
@@ -158,10 +163,10 @@ class SRTAPIClient: ObservableObject {
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { return nil }
             
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("SRT Train Search Full Response: \(responseString)") // 응답 전체 출력
-                print("===========================================================")
-            }
+//            if let responseString = String(data: data, encoding: .utf8) {
+//                print("SRT Train Search Full Response: \(responseString)") // 응답 전체 출력
+//                print("===========================================================")
+//            }
             
             // 응답 JSON 파싱
             let decoder = JSONDecoder()
@@ -170,7 +175,8 @@ class SRTAPIClient: ObservableObject {
             let output1 = fullResponse.outDataSets.dsOutput1
                 // SRT 열차만 필터링 (stlbTrnClsfCd == "17")
                 let srtTrainArray = output1.filter { $0.trainCode == "17" }
-//                print(srtTrainArray)
+                print(srtTrainArray)
+                print("===========================================================")
                 return srtTrainArray
             
         } catch {
@@ -179,19 +185,23 @@ class SRTAPIClient: ObservableObject {
         return nil
     }
 
-    func reserve(train: SRTTrain, passengerArray: [SRTPassenger]?, preference: SeatPreference) async -> SRTReservation {
+    func reserve(
+        train: SRTTrain,
+        passengerArray: [SRTPassenger]?,
+        preference: SeatPreference
+    ) async -> SRTReservation? {
         print("Attempting to reserve: \(train) with preference: \(preference.rawValue)")
 //        1. 좌석 확인 및 예약 대기 확인
 //        1-1. 좌석이 없고 예약 대기 가능 -> 예약 대기 시도
         if !train.isSeatAvail() && train.reservePossibleCode >= 0 && self.phoneNumber != nil {
-            return self.reserveStandby(
+            return await self.reserveStandby(
                 jobId: SRTConstant.RESERVE_JOB_ID["STANDBY"],
                 train: train,
                 passengerArray: passengerArray,
                 preference: preference
             )
         } else {
-            return self.reserveTicket(
+            return await self.reserveTicket(
                 jobId: SRTConstant.RESERVE_JOB_ID["PERSONAL"],
                 train: train,
                 passengerArray: passengerArray,
@@ -200,7 +210,13 @@ class SRTAPIClient: ObservableObject {
         }
     }
     
-    func reserveStandby(jobId: String!, train: SRTTrain, passengerArray: [SRTPassenger]? = nil, preference: SeatPreference, windowSeat: Bool? = nil) async -> SRTReservation {
+    func reserveStandby(
+        jobId: String!,
+        train: SRTTrain,
+        passengerArray: [SRTPassenger]? = nil,
+        preference: SeatPreference,
+        windowSeat: Bool? = nil
+    ) async -> SRTReservation? {
         var standbyPref = preference
         
         if standbyPref == SeatPreference.specialFirst {
@@ -209,15 +225,15 @@ class SRTAPIClient: ObservableObject {
             standbyPref = SeatPreference.generalOnly
         }
         let isAgreeClassChange = (preference == SeatPreference.generalFirst || preference == SeatPreference.specialFirst)
-        let stanbyReservation = self.reserveTicket(
+        let stanbyReservation = await self.reserveTicket(
             jobId: jobId,
             train: train,
             preference: standbyPref
         )
-        if self.isLoggedIn {
+        if self.isLoggedIn && stanbyReservation != nil {
             var components = URLComponents()
             components.queryItems = [
-                URLQueryItem(name: "pnrNo", value: stanbyReservation.reservationNumber),
+                URLQueryItem(name: "pnrNo", value: stanbyReservation!.reservationNumber),
                 URLQueryItem(name: "psrmClChgFlg", value: isAgreeClassChange ? "Y" : "N"),
                 URLQueryItem(name: "smsSndFlg", value: "Y"),
                 URLQueryItem(name: "telNo", value: self.phoneNumber)
@@ -243,8 +259,67 @@ class SRTAPIClient: ObservableObject {
         return stanbyReservation
     }
     
-    func reserveTicket(jobId: String!, train: SRTTrain, passengerArray: [SRTPassenger]? = nil, preference: SeatPreference, windowSeat: Bool? = nil) -> SRTReservation {
+    func reserveTicket(
+        jobId: String!,
+        train: SRTTrain,
+        passengerArray: [SRTPassenger]? = nil,
+        preference: SeatPreference,
+        windowSeat: Bool? = nil
+    ) async -> SRTReservation? {
+//        1. 조건 확인 -> 일단 pass
+        guard isLoggedIn, let url = URL(string: SRTConstant.API_ENDPOINTS["reserve"]!) else { return nil }
+//        2. 승객 정보 처리, 없으면 adult 1
+//        let passengerArray = passengerArray ?? [Adult(1)]
         
-        return SRTReservation()
+//        3. 좌석 유형 결정
+        let isSpecialSeat: Bool
+        switch preference {
+        case .generalOnly: isSpecialSeat = false
+        case .specialOnly: isSpecialSeat = true
+        case .generalFirst: isSpecialSeat = !train.isGeneralSeatAvail()
+        case .specialFirst: isSpecialSeat = train.isSpecialSeatAvail()
+        }
+//        4. API 요청을 위한 파라미터 구성
+        guard let netfunnelKey = try? await self.netFunnelHelper.run() else {
+            print("SRTAPIClient: Failed to get NetFunnel key for reservation.")
+            return nil
+        }
+        
+        var params: [String: String] = [
+            "jobId": jobId,
+            "jrnyCnt": "1",
+            "jrnyTpCd": "11",
+            "jrnySqno1": "001",
+            "stndFlg": "N",
+            "trnGpCd1": "300",
+            "trnGpCd": "109",
+            "grpDv": "0",
+            "rtnDv": "0",
+            "stlbTrnClsfCd1": train.trainCode,
+            "dptRsStnCd1": train.depStationCode,
+            "dptRsStnCdNm1": train.depStationName,
+            "arvRsStnCd1": train.arrStationCode,
+            "arvRsStnCdNm1": train.arrStationName,
+            "dptDt1": train.depDate,
+            "dptTm1": train.depTime,
+            "arvTm1": train.arrTime,
+            "trnNo1": String(format: "%05d", Int(train.trainNumber) ?? 0),
+            "runDt1": train.depDate,
+            "dptStnConsOrdr1": train.depStationConstitutionOrder,
+            "arvStnConsOrdr1": train.arrStationConstitutionOrder,
+            "dptStnRunOrdr1": train.depStationRunOrder,
+            "arvStnRunOrdr1": train.arrStationRunOrder,
+            "mblPhone": self.phoneNumber ?? "",
+            "netfunnelKey": netfunnelKey,
+        ]
+//        5. 개인 예약 시 추가 데이터 설정
+        if jobId == SRTConstant.RESERVE_JOB_ID["PERSONAL"] { params["reserveType"] = "11"}
+//        6. 승객 상세 정보 추가
+//        7. post
+//        8. 파싱
+//        9. 번호 추출
+//        10. ticket 생성 및 반환
+        return nil
+//        return SRTReservation()
     }
 }

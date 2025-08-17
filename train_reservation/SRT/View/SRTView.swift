@@ -74,7 +74,7 @@ struct SRTView: View {
                 if isLoading {
                     ProgressView("로그인 중...")
                         .padding()
-                        .background(Color.white.opacity(0.8))
+                        .background(.regularMaterial)
                         .cornerRadius(10)
                 }
             }

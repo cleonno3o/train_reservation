@@ -33,9 +33,6 @@ struct SRTSearchOptionView: View {
     // 조회된 열차 목록
     @State private var trainArray: [SRTTrain] = []
 
-    // 넷퍼넬 키 저장
-    @State private var currentNetfunnelKey: String? = nil
-
     // 예매 취소 플래그
     @State private var isReservationCancelled = false
 
@@ -47,6 +44,7 @@ struct SRTSearchOptionView: View {
     @State private var showingReservationOverlay = false
     @State private var reservationStartTime: Date?
     @State private var elapsedTime: TimeInterval = 0
+    @State private var tryCount: Int = 0
     
     var body: some View {
         VStack {
@@ -96,7 +94,7 @@ struct SRTSearchOptionView: View {
                     Button("열차 조회") {
                         // 새로 만든 함수를 비동기 Task로 실행
                         Task {
-                            await performNetFunnelAndSearch()
+                            await requestSearch()
                         }
                     }
                 }
@@ -122,7 +120,7 @@ struct SRTSearchOptionView: View {
             if isLoadingTrainSearch {
                 ProgressView("열차 조회 중...")
                     .padding()
-                    .background(Color.white.opacity(0.8))
+                    .background(.regularMaterial)
                     .cornerRadius(10)
             }
         }
@@ -135,6 +133,8 @@ struct SRTSearchOptionView: View {
                         ProgressView()
                         Text("예매 시도 중...")
                             .font(.headline)
+                        Text(String(format: "%d번 시도", tryCount))
+                            .font(.subheadline)
                         Text(String(format: "%.0f초 경과", elapsedTime))
                             .font(.subheadline)
                         Divider()
@@ -149,7 +149,7 @@ struct SRTSearchOptionView: View {
                         }
                     }
                     .padding(20)
-                    .background(Color.white)
+                    .background(.regularMaterial)
                     .cornerRadius(15)
                     .shadow(radius: 10)
                     .frame(width: geometry.size.width * 0.6)
@@ -159,6 +159,7 @@ struct SRTSearchOptionView: View {
                         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
                             if self.showingReservationOverlay, let startTime = self.reservationStartTime {
                                 self.elapsedTime = Date().timeIntervalSince(startTime)
+                                self.tryCount += 1
                             } else {
                                 timer.invalidate()
                             }
@@ -167,6 +168,7 @@ struct SRTSearchOptionView: View {
                     .onDisappear {
                         // Reset elapsed time when overlay disappears
                         self.elapsedTime = 0
+                        self.tryCount = 0
                     }
                 }
             }
@@ -180,31 +182,7 @@ struct SRTSearchOptionView: View {
     }
     
     // NetFunnelHelper를 실행하고 열차를 조회하는 새로운 함수
-    private func performNetFunnelAndSearch() async {
-        isLoadingTrainSearch = true // 로딩 인디케이터 표시
-
-        let netFunnelHelper = NetFunnelHelper(debug: true) // 디버그 메시지를 보기 위해 true로 설정
-        do {
-            // NetFunnelHelper를 실행하여 인증 키를 받아옴
-            let netfunnelKey = try await netFunnelHelper.run()
-            
-            self.currentNetfunnelKey = netfunnelKey // 넷퍼넬 키 저장
-            
-            // 성공적으로 키를 받으면, 기존의 searchTrains 함수를 호출
-            print("NetFunnel Key Received")
-            await requestTrainSearch(netfunnelKey: netfunnelKey)
-            
-        } catch {
-            // 실패 시, 사용자에게 알림
-            trainSearchAlertMessage = "넷퍼넬 인증에 실패했습니다: \(error.localizedDescription)"
-            showingTrainSearchAlert = true
-        }
-        
-        isLoadingTrainSearch = false // 로딩 인디케이터 숨김
-    }
-
-    // 열차 조회 API 호출 함수
-    private func requestTrainSearch(netfunnelKey: String) async {
+    private func requestSearch() async {
         isLoadingTrainSearch = true
         trainSearchAlertMessage = ""
         showingTrainSearchAlert = false
@@ -232,8 +210,7 @@ struct SRTSearchOptionView: View {
             arrivalStationCode: arvRsStnCd,
             date: dptDt,
             time: dptTm,
-            passengerCount: passengerCount,
-            netfunnelKey: netfunnelKey
+            passengerCount: passengerCount
         ) {
             self.trainArray = fetchedTrainArray
             print("Fetched Trains: \(self.trainArray)") // Add this line
@@ -244,18 +221,37 @@ struct SRTSearchOptionView: View {
         }
         
         isLoadingTrainSearch = false
+//        isLoadingTrainSearch = true // 로딩 인디케이터 표시
+
+//        let netFunnelHelper = NetFunnelHelper(debug: true) // 디버그 메시지를 보기 위해 true로 설정
+//        do {
+            // NetFunnelHelper를 실행하여 인증 키를 받아옴
+//            let netfunnelKey = try await netFunnelHelper.run()
+            
+//            self.currentNetfunnelKey = netfunnelKey  넷퍼넬 키 저장
+            
+            // 성공적으로 키를 받으면, 기존의 searchTrains 함수를 호출
+//            print("NetFunnel Key Received")
+//            await requestTrainSearch()
+//            
+//        } catch {
+//            // 실패 시, 사용자에게 알림
+//            trainSearchAlertMessage = "넷퍼넬 인증에 실패했습니다: \(error.localizedDescription)"
+//            showingTrainSearchAlert = true
+//        }
+//        
+//        isLoadingTrainSearch = false // 로딩 인디케이터 숨김
     }
+
+    // 열차 조회 API 호출 함수
+//    private func requestTrainSearch() async {
+//
+//    }
     
 
     // 예매 로직 구현 함수
     private func performReservation(selectedTrainArray: [SRTTrain]) async {
-        guard let netfunnelKey = currentNetfunnelKey else {
-            reservationResultMessage = "넷퍼넬 키가 없습니다. 다시 시도해주세요."
-            showingReservationResultAlert = true
-            showingReservationOverlay = false
-            return
-        }
-
+        
         // 날짜 및 시간 포맷팅 (예매 시 재사용)
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd"
@@ -274,15 +270,14 @@ struct SRTSearchOptionView: View {
         }
 
         while !isReservationCancelled {
-            print("예매 시도 중...")
+            print("예매 시도 중...", tryCount)
             // 최신 열차 정보 다시 조회
             if let updatedTrainArray = await srtAPIClient.search(
                 departureStationCode: dptRsStnCd,
                 arrivalStationCode: arvRsStnCd,
                 date: dptDt,
                 time: dptTm,
-                passengerCount: passengerCount,
-                netfunnelKey: netfunnelKey
+                passengerCount: passengerCount
             ) {
                 for selectedTrain in selectedTrainArray {
                     // 선택된 열차와 일치하는 최신 정보 찾기
