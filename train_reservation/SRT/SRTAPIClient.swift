@@ -152,4 +152,14 @@ class SRTAPIClient: ObservableObject {
         }
         return nil
     }
+
+    // ✅ 추가: srt.py의 reserve 함수를 참고하여 새로 추가될 함수
+    func reserveTrain(_ train: SRTTrain, preference: SeatPreference) async -> Bool {
+        // TODO:
+        // 1. 예약에 필요한 파라미터(parameter) 구성
+        // 2. SRTConstant.API_ENDPOINTS["reserve"] 로 POST 요청
+        // 3. 응답(response)을 파싱하여 성공 여부 반환
+        print("Attempting to reserve: \(train) with preference: \(preference.rawValue)")
+        return false // 임시 반환값
+    }
 }

@@ -33,6 +33,11 @@ struct SRTSearchOptionView: View {
     // 조회된 열차 목록
     @State private var trainArray: [SRTTrain] = []
     
+    // 예매 로딩 및 시간 표시
+    @State private var showingReservationOverlay = false
+    @State private var reservationStartTime: Date?
+    @State private var elapsedTime: TimeInterval = 0
+    
     var body: some View {
         VStack {
             Form {
@@ -90,8 +95,11 @@ struct SRTSearchOptionView: View {
             .navigationBarTitleDisplayMode(.inline) // 제목을 작은 형태로 표시
             .sheet(isPresented: $showingTrainSelectionSheet) {
                 SRTTrainSelectionView(trainArray: trainArray) { selectedTrainArray in
-                    // TODO: Handle selectedTrains
+                    // Handle selectedTrains and start reservation UI
                     print("Selected Trains: \(selectedTrainArray)")
+                    // For now, just show the overlay
+                    self.showingReservationOverlay = true
+                    self.reservationStartTime = Date()
                 }
             }
         }
@@ -103,6 +111,50 @@ struct SRTSearchOptionView: View {
                     .padding()
                     .background(Color.white.opacity(0.8))
                     .cornerRadius(10)
+            }
+        }
+        // 예매 대기 로딩 인디케이터 및 시간 표시
+        .overlay {
+            if showingReservationOverlay {
+                GeometryReader {
+                    geometry in
+                    VStack {
+                        ProgressView()
+                        Text("예매 시도 중...")
+                            .font(.headline)
+                        Text(String(format: "%.0f초 경과", elapsedTime))
+                            .font(.subheadline)
+                        Divider()
+                            .padding(.vertical, 5)
+                        Button(action: {
+                            self.showingReservationOverlay = false
+                        }) {
+                            Text("취소")
+                                .foregroundColor(.red)
+                                .font(.body)
+                        }
+                    }
+                    .padding(20)
+                    .background(Color.white)
+                    .cornerRadius(15)
+                    .shadow(radius: 10)
+                    .frame(width: geometry.size.width * 0.6)
+                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                    .onAppear {
+                        // Start timer to update elapsed time
+                        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                            if self.showingReservationOverlay, let startTime = self.reservationStartTime {
+                                self.elapsedTime = Date().timeIntervalSince(startTime)
+                            } else {
+                                timer.invalidate()
+                            }
+                        }.fire()
+                    }
+                    .onDisappear {
+                        // Reset elapsed time when overlay disappears
+                        self.elapsedTime = 0
+                    }
+                }
             }
         }
         // 열차 조회 결과 알림
