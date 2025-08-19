@@ -12,6 +12,12 @@ struct SRTConstant {
     // User-Agent 문자열
     static let USER_AGENT = "Mozilla/5.0 (Linux; Android 14; SM-S912N Build/UP1A.231005.007; wv) AppleWebKit/537.36(KHTML, like Gecko) Version/4.0 Chrome/131.0.6778.260 Mobile Safari/537.36SRT-APP-Android V.2.0.33"
     
+//    // 예약 대기 관련 상수
+//    static let RESERVE_POSSIBLE_NAME: [String: String] = [
+//        "reserveSoldOut": "매진",
+//        "reservePossible": "신청하기",
+//        "reserveNotPossible": "-"
+//    ]
     // 기본 HTTP 헤더
     static let DEFAULT_HEADERS: [String: String] = [
         "User-Agent": USER_AGENT,

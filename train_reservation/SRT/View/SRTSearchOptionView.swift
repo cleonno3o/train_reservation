@@ -12,12 +12,13 @@ struct SRTSearchOptionView: View {
     // SRTAPIClient 인스턴스를 환경 객체로 주입받음
     @EnvironmentObject var srtAPIClient: SRTAPIClient
     
-    // 출발역, 도착역, 승객 수, 날짜, 시간을 저장하는 상태 변수
+    // 출발역, 도착역, 승객 수, 날짜, 시간, 좌석 등급을 저장하는 상태 변수
     @State private var departureStation = "수서"
     @State private var arrivalStation = "부산"
     @State private var passengerCount = 1
     @State private var selectedDate = Date() // 현재 날짜로 초기화
     @State private var selectedTime = Date() // 현재 시간으로 초기화
+    @State private var seatPrefernce = SeatPreference.generalFirst
     
     // 역 선택 시트 표시 여부
     @State private var showingDepartureStationSelection = false
@@ -88,6 +89,15 @@ struct SRTSearchOptionView: View {
                 Section(header: Text("날짜/시간")) {
                     DatePicker("날짜", selection: $selectedDate, in: Date()...Calendar.current.date(byAdding: .month, value: 1, to: Date())!, displayedComponents: .date)
                     DatePicker("시간", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                }
+                
+                Section(header: Text("예약 옵션")) {
+                    Picker("좌석 우선순위", selection: $seatPrefernce) {
+                        // SeatPreference.swift 파일에 정의된 모든 케이스를 순회하며 메뉴 생성
+                        ForEach(SeatPreference.allCases) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
                 }
                 
                 Section {
@@ -281,10 +291,20 @@ struct SRTSearchOptionView: View {
             ) {
                 for selectedTrain in selectedTrainArray {
                     // 선택된 열차와 일치하는 최신 정보 찾기
-                    if let currentTrain = updatedTrainArray.first(where: { $0.id == selectedTrain.id }) {
+                    if let currentTrain = updatedTrainArray.first(where: { $0.trainCode == selectedTrain.trainCode && $0.depTime == selectedTrain.depTime }) {
                         // 좌석 가용성 확인 (간단화: 일반실 또는 특실이 '예약가능'인 경우)
-                        let isGeneralAvailable = currentTrain.generalSeatState.contains("예약가능")
-                        let isSpecialAvailable = currentTrain.specialSeatState.contains("예약가능")
+                        if checkTrain(train: currentTrain, seatPref: seatPrefernce) {
+                            print("좌석 발견! 예매 시도: \(currentTrain.trainName) \(currentTrain.trainNumber)")
+//                            if await srtAPIClient.reserve(train: currentTrain, passengerArray: [Adult(count: 1)], preference: seatPrefernce) {
+                            await srtAPIClient.reserve(train: currentTrain, passengerArray: [Adult(count: 1)], preference: seatPrefernce)
+                            reservationResultMessage = "예매 성공!"
+                            showingReservationResultAlert = true
+                            showingReservationOverlay = false
+                            return
+//                            }
+                        }
+//                        let isGeneralAvailable = currentTrain.generalSeatState.contains("예약가능")
+//                        let isSpecialAvailable = currentTrain.specialSeatState.contains("예약가능")
 
 //                        if isGeneralAvailable || isSpecialAvailable {
 //                            print("좌석 발견! 예매 시도: \(currentTrain.trainName) \(currentTrain.trainNumber)")
@@ -318,6 +338,19 @@ struct SRTSearchOptionView: View {
             showingReservationResultAlert = true
             showingReservationOverlay = false
         }
+    }
+    
+    private func checkTrain(train: SRTTrain, seatPref: SeatPreference) -> Bool {
+        if !train.isSeatAvail() {
+            return train.isReserveStandbyAvail()
+        }
+        if seatPref == SeatPreference.generalFirst || seatPref == SeatPreference.specialFirst {
+            return train.isSeatAvail()
+        }
+        if seatPref == SeatPreference.generalOnly {
+            return train.isGeneralSeatAvail()
+        }
+        return train.isSpecialSeatAvail()
     }
 }
 

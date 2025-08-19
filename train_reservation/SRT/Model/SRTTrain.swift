@@ -80,13 +80,16 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
         arrTime = try container.decode(String.self, forKey: .arrTime)
         arrStationCode = try container.decode(String.self, forKey: .arrStationCode)
         arrStationRunOrder = try container.decode(String.self, forKey: .arrStationRunOrder)
+        
         arrStationConstitutionOrder = try container.decode(String.self, forKey: .arrStationConstitutionOrder)
         
         generalSeatState = try container.decode(String.self, forKey: .generalSeatState)
         specialSeatState = try container.decode(String.self, forKey: .specialSeatState)
         reservePossibleName = try container.decode(String.self, forKey: .reservePossibleName)
 //      -1: 예약대기 없음, 9: 예약대기 가능, 0: 매진, -2: 예약대기 불가능
-        reservePossibleCode = Int(try container.decode(String.self, forKey: .reservePossibleCode)) ?? -999
+        let codeString = try container.decode(String.self, forKey: .reservePossibleCode)
+        reservePossibleCode = Int(codeString.trimmingCharacters(in: .whitespaces)) ?? -999
+//        reservePossibleCode = Int(try container.decode(String.self, forKey: .reservePossibleCode)) ?? -999
         
         // SRTConstant에서 조회하여 할당하는 속성들
         trainName = SRTConstant.TRAIN_NAME[trainCode] ?? "알 수 없음"
@@ -114,7 +117,12 @@ struct SRTTrain: Codable, Identifiable, CustomStringConvertible, Hashable, Equat
 
         let trainLine = "[" + trainName + " " + trainNumber + "]"
 
-        return "\(trainLine) \(month)/\(day) \(depHour):\(depMin)~\(arrHour):\(arrMin) \(depStationName)~\(arrStationName) 특실 \(specialSeatState), 일반실 \(generalSeatState) (\(duration)분)"
+        var msg = "\(trainLine) \(month)/\(day) \(depHour):\(depMin)~\(arrHour):\(arrMin) \(depStationName)~\(arrStationName) 특실 \(specialSeatState), 일반실 \(generalSeatState)"
+        if reservePossibleCode >= 0 {
+            msg += ", 예약대기 \(reservePossibleName)"
+        }
+        msg += " (\(duration)분)"
+        return msg
     }
 
     // MARK: - Hashable Conformance

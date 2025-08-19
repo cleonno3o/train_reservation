@@ -42,7 +42,15 @@ struct SRTTicket: Codable {
 
         // Derived properties
         seatType = SRTConstant.SEAT_TYPE[self.seatTypeCode] ?? ""
-        passengerType = SRTConstant.PASSENGER_TYPE[self.passengerTypeCode] ?? ""
+        passengerType = SRTConstant.PASSENGER_TYPE[self.passengerTypeCode] ?? "기타 할인"
         isWaiting = self.seat == ""
+    }
+    
+    var description: String {
+        if isWaiting {
+            return "예약 대기 (\(seatType)) \(passengerType) [\(price)원 (\(discount)원 할인)]"
+        } else {
+            return "\(car)호차 \(seat) (\(seatType)) \(passengerType) [\(price)원 (\(discount)원 할인)]"
+        }
     }
 }

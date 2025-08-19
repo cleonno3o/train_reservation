@@ -86,22 +86,24 @@ class SRTAPIClient: ObservableObject {
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { return false }
             
-            if let responseString = String(data: data, encoding: .utf8) {
+            // 로그인 전체 응답
+//            if let responseString = String(data: data, encoding: .utf8) {
 //                print("SRT Login Response: \(responseString)")
+//                return true
+//            }
+            
+            // 응답 JSON 파싱
+            let decoder = JSONDecoder()
+            let loginResponse = try decoder.decode(LoginResponse.self, from: data)
 
-                // 응답 JSON 파싱
-                let decoder = JSONDecoder()
-                let loginResponse = try decoder.decode(LoginResponse.self, from: data)
-
-                await MainActor.run {
-                    self.isLoggedIn = true
-                    self.membershipNumber = loginResponse.userMap.mbCrdNo
-                    self.membershipName = loginResponse.userMap.custNm
-                    self.phoneNumber = loginResponse.userMap.mblPhone
-                }
-                print("로그인 성공: \(self.membershipName ?? "") (멤버십번호: \(self.membershipNumber ?? ""), 전화번호: \(self.phoneNumber ?? ""))")
-                return true
+            await MainActor.run {
+                self.isLoggedIn = true
+                self.membershipNumber = loginResponse.userMap.mbCrdNo
+                self.membershipName = loginResponse.userMap.custNm
+                self.phoneNumber = loginResponse.userMap.mblPhone
             }
+            print("로그인 성공: \(self.membershipName ?? "") (멤버십번호: \(self.membershipNumber ?? ""), 전화번호: \(self.phoneNumber ?? ""))")
+            return true
         } catch {
             print("Login network error: \(error.localizedDescription)")
         }
@@ -163,10 +165,10 @@ class SRTAPIClient: ObservableObject {
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { return nil }
             
-//            if let responseString = String(data: data, encoding: .utf8) {
+            if let responseString = String(data: data, encoding: .utf8) {
 //                print("SRT Train Search Full Response: \(responseString)") // 응답 전체 출력
-//                print("===========================================================")
-//            }
+                print("===========================================================")
+            }
             
             // 응답 JSON 파싱
             let decoder = JSONDecoder()
@@ -228,8 +230,12 @@ class SRTAPIClient: ObservableObject {
         let stanbyReservation = await self.reserveTicket(
             jobId: jobId,
             train: train,
-            preference: standbyPref
+            passengerArray: passengerArray,
+            preference: standbyPref,
+            windowSeat: windowSeat
         )
+        
+        // reserveStandbyOption 구현부
         if self.isLoggedIn && stanbyReservation != nil {
             var components = URLComponents()
             components.queryItems = [
@@ -249,7 +255,7 @@ class SRTAPIClient: ObservableObject {
             request.httpBody = httpBody
             
             do {
-                let (data, response) = try await URLSession.shared.data(for: request)
+                let (_, _) = try await URLSession.shared.data(for: request)
             } catch {
                 print("SMS Send Error: \(error.localizedDescription)")
                 return stanbyReservation
@@ -269,7 +275,7 @@ class SRTAPIClient: ObservableObject {
 //        1. 조건 확인 -> 일단 pass
         guard isLoggedIn, let url = URL(string: SRTConstant.API_ENDPOINTS["reserve"]!) else { return nil }
 //        2. 승객 정보 처리, 없으면 adult 1
-//        let passengerArray = passengerArray ?? [Adult(1)]
+        let passengerArray = passengerArray ?? [Adult(count: 1)]
         
 //        3. 좌석 유형 결정
         let isSpecialSeat: Bool
@@ -314,11 +320,40 @@ class SRTAPIClient: ObservableObject {
         ]
 //        5. 개인 예약 시 추가 데이터 설정
         if jobId == SRTConstant.RESERVE_JOB_ID["PERSONAL"] { params["reserveType"] = "11"}
-//        6. 승객 상세 정보 추가
-//        7. post
-//        8. 파싱
-//        9. 번호 추출
-//        10. ticket 생성 및 반환
+        // 6. 승객 상세 정보 추가 (Python의 data.update(...) 부분)
+        // SRTPassenger.swift에 구현한 getPassengerDict 헬퍼 함수 사용
+        let passengerParams = passengerArray.getPassengerDict(isSpecialSeat: isSpecialSeat)
+        params.merge(passengerParams) { (_, new) in new }
+
+        // 7. POST 요청 생성 및 전송
+        var components = URLComponents()
+        components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+        guard let httpBody = components.query?.data(using: .utf8) else { return nil }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue(SRTConstant.USER_AGENT, forHTTPHeaderField: "User-Agent")
+        request.setValue(SRTConstant.DEFAULT_HEADERS["Accept"], forHTTPHeaderField: "Accept")
+        request.httpBody = httpBody
+
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("SRT Reservation Response: \(responseString)")
+            }
+            
+            // 8. 응답 파싱
+//            let decoder = JSONDecoder()
+//            let reservationResponse = try decoder.decode(SRTReservationResponse.self, from: data)
+            
+            // 9. 예약 번호 추출 및 10. SRTReservation 객체 생성하여 반환
+//            if let reservationInfo = reservationResponse.reservListMap.first {
+//                return SRTReservation(reservationNumber: reservationInfo.pnrNo)
+//            }
+        } catch {
+            print("Reservation network or parsing error: \(error)")
+        }
         return nil
 //        return SRTReservation()
     }
